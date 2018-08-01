@@ -15,9 +15,9 @@ module Ports(Port,openPort,send,doSend,openNamedPort,
              openProcessPort,SP_Msg(..),choiceSPEP,
              newObject,newNamedObject,runNamedServer ) where
 
-import Time
-import System(system,sleep,getPID)
-import CPNS
+import Data.Time
+import System.Process (system,sleep,getPID)
+import Network.CPNS
 
 --- The internal constructor for the port datatype is not visible to the user.
 
@@ -205,7 +205,7 @@ connectPort nameAtHost = do
 --- @param ms - a stream of messages received via an external port
 --- @return (Left s) if s is an input line received
 ---                  at the stream port (via SP_GetLine) or
---- 
+---
 ---         (Right ms) if the stream ms is instantiated
 ---                    with at least one new message at the head
 

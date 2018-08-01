@@ -1,6 +1,6 @@
 {
     "name": "ports",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "Library for distributed programming with ports",
     "category": [ "Programming" ],

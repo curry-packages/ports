@@ -2,7 +2,7 @@
 -- to enable a conversation between two partners on different machines
 
 import Ports
-import IO
+import System.IO
 
 -- Message to inform the partner to show a string:
 data TalkMsg = Talk String

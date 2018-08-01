@@ -3,7 +3,7 @@
 
 import Ports
 import sema
-import Unsafe(trace)
+import System.IO.Unsafe(trace)
 
 -- initialize the room and the philosophers:
 -- at most four philosophers can enter the room (guarded by semaphore "room")
@@ -38,4 +38,3 @@ philosopher i room forks =
 
 think i = trace ("Philosopher "++show i++" thinks.") True
 eat i   = trace ("Philosopher "++show i++" eats.") True
-
