@@ -3,8 +3,13 @@
     "version": "1.0.0",
     "author": "Michael Hanus <mh@informatik.uni-kiel.de>",
     "synopsis": "Library for distributed programming with ports",
-    "category": [ "Programming" ],
-    "dependencies": { },
+    "category": [ "Network", "Programming" ],
+    "license": "BSD-3-Clause",
+    "licenseFile": "LICENSE",
+    "dependencies": {
+        "base" : ">= 1.0.0, < 2.0.0",
+        "cpns" : ">= 0.0.1"
+    },
     "exportedModules": [ "Ports" ],
     "compilerCompatibility": {
         "pakcs": ">= 2.0.0"

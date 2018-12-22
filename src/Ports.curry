@@ -1,23 +1,23 @@
 ------------------------------------------------------------------------------
 --- Library for distributed programming with ports.
---- <a href="http://www.informatik.uni-kiel.de/~mh/papers/PPDP99.html">
---- This paper</a> contains a description of the basic ideas
---- behind this library.
+--- [This paper](http://www.informatik.uni-kiel.de/~mh/papers/PPDP99.html)
+--- contains a description of the basic ideas behind this library.
 ---
 --- @author Michael Hanus
---- @version April 2007
---- @category general
+--- @version December 2018
 ------------------------------------------------------------------------------
 
-module Ports(Port,openPort,send,doSend,openNamedPort,
-             connectPort,connectPortRepeat,connectPortWait,
-             ping,timeoutOnStream,
-             openProcessPort,SP_Msg(..),choiceSPEP,
-             newObject,newNamedObject,runNamedServer ) where
+module Ports( Port, openPort, send, doSend, openNamedPort
+            , connectPort, connectPortRepeat, connectPortWait
+            , ping, timeoutOnStream
+            , openProcessPort, SP_Msg(..), choiceSPEP
+            , newObject, newNamedObject, runNamedServer
+            ) where
 
 import Time
-import System(system,sleep,getPID)
-import CPNS
+import System ( system, sleep, getPID )
+
+import Network.CPNS
 
 --- The internal constructor for the port datatype is not visible to the user.
 
@@ -143,7 +143,7 @@ connectPortRepeat waittime action retries nameAtHost = do
   let (name,atHost) = break (=='@') nameAtHost
       host = if atHost=="" then "localhost" else tail atHost
   -- check whether remote CPNS demon is alive:
-  alive <- cpnsAlive waittime host
+  alive <- cpnsAlive host
   if not alive
     then tryAgain
     else do -- get remote socket/port numbers:
