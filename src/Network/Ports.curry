@@ -1,27 +1,28 @@
 ------------------------------------------------------------------------------
 --- Library for distributed programming with ports.
---- [This paper](http://www.informatik.uni-kiel.de/~mh/papers/PPDP99.html)
+--- [This paper](https://www.informatik.uni-kiel.de/~mh/papers/PPDP99.html)
 --- contains a description of the basic ideas behind this library.
 ---
 --- @author Michael Hanus
---- @version December 2018
+--- @version March 2021
 ------------------------------------------------------------------------------
 
-module Ports( Port, openPort, send, doSend, openNamedPort
-            , connectPort, connectPortRepeat, connectPortWait
-            , ping, timeoutOnStream
-            , openProcessPort, SP_Msg(..), choiceSPEP
-            , newObject, newNamedObject, runNamedServer
-            ) where
+module Network.Ports
+  ( Port, openPort, send, doSend, openNamedPort
+  , connectPort, connectPortRepeat, connectPortWait
+  , ping, timeoutOnStream
+  , openProcessPort, SP_Msg(..), choiceSPEP
+  , newObject, newNamedObject, runNamedServer
+  , hWaitForInputOrMsg, hWaitForInputsOrMsg
+  ) where
 
-import Time
-import System ( system, sleep, getPID )
+import System.Process ( sleep )
 
-import Network.CPNS
+import Network.CPNS   ( cpnsAlive, getPortInfo, registerPort )
 
 --- The internal constructor for the port datatype is not visible to the user.
 
-data Port a = internalPort String Int Int a
+data Port a = InternalPort String Int Int a
 
 
 --- Opens an internal port for communication.
@@ -171,7 +172,7 @@ connectPortRepeat waittime action retries nameAtHost = do
 --- @return a port with the symbolic name portname
 connectPortWait :: String -> IO (Port _)
 connectPortWait nameAtHost = do
-  Just port <- connectPortRepeat 1000 done (-1) nameAtHost
+  Just port <- connectPortRepeat 1000 (return ()) (-1) nameAtHost
   return port
 
 
@@ -190,7 +191,7 @@ connectPort nameAtHost = do
   if snr==0
     then error ("connectPort: Port \""++name++"@"++host++
                 "\" is not registered!")
-    else done
+    else return ()
   connectPortAtSocket snr pnr host
 
 
@@ -224,7 +225,7 @@ prim_choiceSPEP external
 --- @param state - the initial state of the object
 --- @param port - a free variable which will be constrained to the port
 ---               for sending messages to the object
-newObject :: (state -> [msg] -> Bool) -> state -> Port msg -> Bool
+newObject :: Data msg => (state -> [msg] -> Bool) -> state -> Port msg -> Bool
 newObject object state port = let msgs free in
   openPort port msgs &> object state (map ensureNotFree (ensureSpine msgs))
 
@@ -286,4 +287,49 @@ connectPortAtSocket snr pnr host =
 prim_connectPortAtSocket :: Int -> Int -> String -> IO (Port _)
 prim_connectPortAtSocket external
 
---  end of module Ports
+--- Waits until input is available on a given handles or a message
+--- in the message stream.
+--- Usually, the message stream comes from an external port.
+--- Thus, this operation implements a committed choice over receiving input
+--- from an IO handle or an external port.
+---
+--- _Note that the implementation of this operation works only with
+--- Sicstus-Prolog 3.8.5 or higher (due to a bug in previous versions
+--- of Sicstus-Prolog)._
+---
+--- @param handle - a handle for an input stream
+--- @param msgs   - a stream of messages received via an external port
+--- @return (Left handle) if the handle has some data available
+---         (Right msgs) if the stream msgs is instantiated
+---                      with at least one new message at the head
+
+hWaitForInputOrMsg :: Handle -> [msg] -> IO (Either Handle [msg])
+hWaitForInputOrMsg handle msgs = do
+  input <- hWaitForInputsOrMsg [handle] msgs
+  return $ either (\_ -> Left handle) Right input
+
+--- Waits until input is available on some of the given handles or a message
+--- in the message stream.
+--- Usually, the message stream comes from an external port.
+--- Thus, this operation implements a committed choice over receiving input
+--- from IO handles or an external port.
+---
+--- _Note that the implementation of this operation works only with
+--- Sicstus-Prolog 3.8.5 or higher (due to a bug in previous versions
+--- of Sicstus-Prolog)._
+---
+--- @param handles - a list of handles for input streams
+--- @param msgs    - a stream of messages received via an external port
+--- @return (Left i) if (handles!!i) has some data available
+---         (Right msgs) if the stream msgs is instantiated
+---                      with at least one new message at the head
+
+hWaitForInputsOrMsg :: [Handle] -> [msg] -> IO (Either Int [msg])
+hWaitForInputsOrMsg handles msgs =
+  seq (normalForm (map ensureNotFree (ensureSpine handles)))
+      (prim_hWaitForInputsOrMsg handles msgs)
+
+prim_hWaitForInputsOrMsg :: [Handle] -> [msg] -> IO (Either Int [msg])
+prim_hWaitForInputsOrMsg external
+
+--  end of module Network.Ports

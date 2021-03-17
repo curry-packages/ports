@@ -1,7 +1,7 @@
 -- an implementation of semaphores in Curry:
 
-import Ports
-import Unsafe(trace)
+import System.IO.Unsafe ( trace )
+import Network.Ports
 
 -- semaphores are considered as object which can receive the following
 -- messages:

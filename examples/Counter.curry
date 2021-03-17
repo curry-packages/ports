@@ -1,7 +1,7 @@
 -- Distributed programming in Curry:
 -- a counter server reacting on messages of type (Set v), Inc, or (Get x):
 
-import Ports
+import Network.Ports
 
 -- the counter implemented as a concurrent object:
 data CounterMessage = Set Int | Inc | Get Int
@@ -13,7 +13,7 @@ counter n (Get v : ms) = v=:=n & counter n ms
 counter _ []           = True
 
 -- creating the counter object as a server:
-counter_server = newNamedObject counter 0 "counter"
+counterServer = newNamedObject counter 0 "counter"
 
 -- a counter client:
 cc msg = do

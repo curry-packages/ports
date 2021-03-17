@@ -1,17 +1,19 @@
 #!/bin/sh
 # script to start all semaphores for the dining philosophers:
 
-pakcs :l philo_ext :eval start_room  &
-pakcs :l philo_ext :eval start_fork0 &
-pakcs :l philo_ext :eval start_fork1 &
-pakcs :l philo_ext :eval start_fork2 &
-pakcs :l philo_ext :eval start_fork3 &
-pakcs :l philo_ext :eval start_fork4 &
+PAKCS=pakcs
+
+$PAKCS :l PhiloExt :eval start_room  &
+$PAKCS :l PhiloExt :eval start_fork0 &
+$PAKCS :l PhiloExt :eval start_fork1 &
+$PAKCS :l PhiloExt :eval start_fork2 &
+$PAKCS :l PhiloExt :eval start_fork3 &
+$PAKCS :l PhiloExt :eval start_fork4 &
 
 # now you can start the philosophers
 
-pakcs :l philo_ext :eval start_phil 0 &
-pakcs :l philo_ext :eval start_phil 1 &
-pakcs :l philo_ext :eval start_phil 2 &
-pakcs :l philo_ext :eval start_phil 3 &
-pakcs :l philo_ext :eval start_phil 4 &
+$PAKCS :l PhiloExt :eval start_phil 0 &
+$PAKCS :l PhiloExt :eval start_phil 1 &
+$PAKCS :l PhiloExt :eval start_phil 2 &
+$PAKCS :l PhiloExt :eval start_phil 3 &
+$PAKCS :l PhiloExt :eval start_phil 4 &

@@ -2,7 +2,7 @@
 -- a bank account implemented as an object waiting for messages of type
 -- Deposit a, Withdraw a, Balance b, or Exit:
 
-import Ports
+import Network.Ports
 
 data Message = Deposit Int | Withdraw Int | Balance Int | Exit
 
@@ -14,11 +14,11 @@ account n (Withdraw a : ms)  =  account (n-a) ms
 account n (Balance  b : ms)  =  b=:=n & account n ms
 
 -- create bank account with a port:
-account_server port = newObject account 0 port
+accountServer port = newObject account 0 port
 
 -- goals:
 goal1 b = let p free in
-          account_server p
+          accountServer p
           & send (Deposit 200) p & send (Deposit 50) p & send (Balance b) p
           & send Exit p
 
@@ -33,7 +33,7 @@ client p msgs | send (Balance b) p =
   where b free
 
 goal2 msgs = let p free in
-             account_server p
+             accountServer p
              & (sendClient  p [] (Deposit 100) =:= msgs -- simulation
                 &> send Exit p) -- terminate account server
 
@@ -42,7 +42,7 @@ goal2 msgs = let p free in
 Example usage:
 
 > pakcs
-Prelude> :l accountport
+Prelude> :l AccountPort
 accountport> goal1 b  where b free
 {b=250} True
 accountport> goal2 b  where b free

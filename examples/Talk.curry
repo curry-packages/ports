@@ -1,8 +1,8 @@
 -- A simple program implementing the kernel of the Unix "talk"
 -- to enable a conversation between two partners on different machines
 
-import Ports
-import IO
+import System.IO     ( Handle, hGetLine, stdin )
+import Network.Ports
 
 -- Message to inform the partner to show a string:
 data TalkMsg = Talk String
@@ -19,16 +19,17 @@ talk myport yourport = do
 -- the main loop to implement the conversation:
 talkloop :: Port TalkMsg -> Handle -> [TalkMsg] -> IO ()
 talkloop yourport tty yourmsgs = do
+  putStrLn "TALKLOOP"
   input <- hWaitForInputOrMsg tty yourmsgs
   processInput input
  where
   processInput (Left handle) = do
     ttyline <- hGetLine handle
     doSend (Talk ttyline) yourport
-    if ttyline=="." then done
+    if ttyline=="." then return ()
                     else talkloop yourport tty yourmsgs
   processInput (Right (Talk msg:msgs)) =
-    if msg=="." then done
+    if msg=="." then return ()
                 else putStrLn ('*':msg) >> talkloop yourport tty msgs
 
 

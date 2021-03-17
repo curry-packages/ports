@@ -3,16 +3,17 @@
 -- each philosopher is represented by a Curry program and
 -- the semaphores are external ports
 
-import Ports
-import sema
+import Network.Ports
+import Semaphore
 
 -- create external semaphore:
 newextsem n name = openNamedPort name >>= extsem (n,[])
-extsem state stream | semaphore state stream = done
+ where
+  extsem state stream | semaphore state stream = return ()
 
-signalIO semport | signal semport = done
+signalIO semport | signal semport = return ()
 
-waitIO   semport | wait   semport = done
+waitIO   semport | wait   semport = return ()
 
 
 -- each philosopher is a process with the following loop:
@@ -33,7 +34,7 @@ thinkIO i = putStr ("Philosopher "++show i++" thinks.\n") >> sleep 40000
 eatIO i   = putStr ("Philosopher "++show i++" eats.\n") >> sleep 30000
 
 
-sleep n = if n==0 then done else sleep (n-1)
+sleep n = if n==0 then return () else sleep (n-1)
 
 -- initialize the room and the philosophers:
 -- at most four philosophers can enter the room (guarded by semaphore "room")

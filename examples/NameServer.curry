@@ -1,6 +1,6 @@
 -- Programming with ports: a name server
 
-import Ports
+import Network.Ports
 
 -- a name server which understands the following messages:
 -- "PutName <name> <nr>": assign value <nr> (an int) to <name>
@@ -19,11 +19,11 @@ data Message = GetName String Int | PutName String Int | Close
 serve = openNamedPort "nameserver" >>= serverloop (const 0)
 
 serverloop :: (String->Int) -> [Message] -> IO ()
-serverloop _   (Close : _) = done
+serverloop _   (Close : _)                       = return ()
 serverloop n2i (GetName n i : s) | i =:= (n2i n) = serverloop n2i s
-serverloop n2i (PutName n i : s) = serverloop new_n2i s
-   where new_n2i m = if m==n then i else n2i m
-
+serverloop n2i (PutName n i : s)                 = serverloop new_n2i s
+ where
+  new_n2i m = if m==n then i else n2i m
 
 --------------------------------------------------------------------------
 -- client side functions:
@@ -43,9 +43,9 @@ gn2 = nameNr "email"
 closeServer = ns_client Close
 
 -- send nameserver message to server
-ns_client msg =
-   do p <- connectPort ("nameserver@"++serverhost)
-      doSend msg p
+ns_client msg = do
+  p <- connectPort ("nameserver@" ++ serverhost)
+  doSend msg p
 
 {-
 Example usage:

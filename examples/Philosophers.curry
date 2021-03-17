@@ -1,9 +1,9 @@
 -- The "dining philosophers" example in Curry
 -- (using semaphores implemented via ports)
 
-import Ports
-import sema
-import Unsafe(trace)
+import System.IO.Unsafe ( trace )
+import Network.Ports
+import Semaphore
 
 -- initialize the room and the philosophers:
 -- at most four philosophers can enter the room (guarded by semaphore "room")

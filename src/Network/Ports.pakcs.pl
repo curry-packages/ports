@@ -2,18 +2,15 @@
 % Prolog implementation of the port primitives.
 %
 
-%:- (current_module(prim_standard) -> true ; ensure_loaded(user:prim_standard)). % for normalizeAndCheck,waitUntilGround
-:- installDir(PH), appendAtom(PH,'/src/readShowTerm',RST), use_module(RST). % for term en/decoding
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % dynamic configurations for the port implementation:
 
 :- dynamic only_localhost/1, tracePorts/1,
 	   mySocket/1, incomingPortStreams/2.
 
-% the the communication socket for this program
+% The communication socket for this program
 % (will be set by the first invocation of openPortOnSocket):
-%mySocket('Ports.internalPort'(Host,SocketNr,MaxPortNumber,Socket)).
+%mySocket('Network.Ports.InternalPort'(Host,SocketNr,MaxPortNumber,Socket)).
 
 % lists of all pending incoming streams at our socket:
 % IPNr is the port number of the streams
@@ -48,7 +45,7 @@ ifTracePort(Goal) :-
 % definitions for port communication:
 %
 % internal representation of the handle of a port:
-% 'Ports.internalPort'(Host,SNr,IPNr,Socket) where:
+% 'Network.Ports.InternalPort'(Host,SNr,IPNr,Socket) where:
 % - for external ports:
 %   Host: Internet name of the host (a Curry list)
 %   SNr: socket number of the port at Host (an integer)
@@ -129,21 +126,21 @@ ifTracePort(Goal) :-
 
 %%%%% open
 
-'Ports.prim_openPort'(P,_,_) :-
+'Network.Ports.prim_openPort'(P,_,_) :-
 	nonvar(P), !,
 	writeErr('ERROR: openPort: port is not a free variable'), nlErr,
 	fail.
-'Ports.prim_openPort'(_,S,_) :-
+'Network.Ports.prim_openPort'(_,S,_) :-
 	nonvar(S), !,
 	writeErr('ERROR: openPort: stream is not a free variable'), nlErr,
 	fail.
-'Ports.prim_openPort'('Ports.internalPort'([],0,0,S),S,'Prelude.True').
+'Network.Ports.prim_openPort'('Network.Ports.InternalPort'([],0,0,S),S,'Prelude.True').
 
 
-'Ports.prim_openPortOnSocket'(NewSocketNr,NewPortNr,Result) :-
-	(retract(mySocket('Ports.internalPort'(Host,SocketNr,MPN,Socket)))
+'Network.Ports.prim_openPortOnSocket'(NewSocketNr,NewPortNr,Result) :-
+	(retract(mySocket('Network.Ports.InternalPort'(Host,SocketNr,MPN,Socket)))
 	 -> MPN1 is MPN+1,
-	    asserta(mySocket('Ports.internalPort'(Host,SocketNr,MPN1,Socket))),
+	    asserta(mySocket('Network.Ports.InternalPort'(Host,SocketNr,MPN1,Socket))),
 	    ((NewSocketNr=SocketNr, NewPortNr=MPN1)
 	     -> true
 	      ; writeErr('ERROR: inconsistent socket/port numbers in openPortOnSocket!'),
@@ -156,11 +153,11 @@ ifTracePort(Goal) :-
 		          write('":'), nl, printError(Exc), !, fail)),
 	    atom2String(AHost,Host),
 	    (var(NewPortNr) -> NewPortNr=0 ; true),
-	    asserta(mySocket('Ports.internalPort'(Host,NewSocketNr,NewPortNr,
+	    asserta(mySocket('Network.Ports.InternalPort'(Host,NewSocketNr,NewPortNr,
 						  Socket)))
 	),
 	mySocket(Port),
-	Port = 'Ports.internalPort'(CurrHost,CurrSocketNr,CurrPNr,_),
+	Port = 'Network.Ports.InternalPort'(CurrHost,CurrSocketNr,CurrPNr,_),
 	ifTracePort((writeErr('TRACEPORTS: Listen on port '),
 	             writeErr(CurrPNr),
 	             writeErr(' at socket '),
@@ -171,8 +168,8 @@ ifTracePort(Goal) :-
 			                     writeErr(ACurrHost)),
 	             writeErr('...'), nlErr)),
 	(compileWithSharing(function)
-	 -> makeShare('Ports.basicServerLoop'(Port),Result)
-	  ; Result = 'Ports.basicServerLoop'(Port)).
+	 -> makeShare('Network.Ports.basicServerLoop'(Port),Result)
+	  ; Result = 'Network.Ports.basicServerLoop'(Port)).
 
 % try setting socket number (if it is unbound) to the value of
 % environment variable PAKCS_SOCKET, if it is defined:
@@ -184,13 +181,13 @@ trySetSocketNumber(SocketNr) :-
 trySetSocketNumber(_).
 	
 % loop for reading the stream of incoming messages at a port:
-?- block 'prim_basicServerLoop'(?,?,-,?).
-'prim_basicServerLoop'(Port,Result,E0,E) :-
+?- block prim_basicServerLoop(?,?,-,?).
+prim_basicServerLoop(Port,Result,E0,E) :-
 	readPort(Port,ReadResult,-1),
 	Result = [ReadResult|BSL],
 	(compileWithSharing(function)
-	 -> makeShare('Ports.basicServerLoop'(Port),BSL)
-	  ; BSL = 'Ports.basicServerLoop'(Port)),
+	 -> makeShare('Network.Ports.basicServerLoop'(Port),BSL)
+	  ; BSL = 'Network.Ports.basicServerLoop'(Port)),
 	E0=E.
  
 
@@ -212,11 +209,11 @@ prim_timeoutOnStream_exec(Timeout,share(M),Result,E0,E) :- !,
 prim_timeoutOnStream_exec(_,[],'Prelude.Just'([]),E0,E) :- % stream already instantiated
         !, E0=E.
 prim_timeoutOnStream_exec(_,[X|Xs],'Prelude.Just'([X|Xs]),E0,E) :- !, E0=E.
-prim_timeoutOnStream_exec(Timeout,'Ports.basicServerLoop'(Port),Result,E0,E) :-
+prim_timeoutOnStream_exec(Timeout,'Network.Ports.basicServerLoop'(Port),Result,E0,E) :-
 	(readPort(Port,ReadResult,Timeout)
 	 -> (compileWithSharing(function)
-	     -> makeShare('Ports.basicServerLoop'(Port),BSL)
-	      ; BSL = 'Ports.basicServerLoop'(Port)),
+	     -> makeShare('Network.Ports.basicServerLoop'(Port),BSL)
+	      ; BSL = 'Network.Ports.basicServerLoop'(Port)),
 	    Result='Prelude.Just'([ReadResult|BSL])
 	  ; Result='Prelude.Nothing'),
 	E0=E.
@@ -253,14 +250,14 @@ eval_send_extvar_binding(Stream,Term,Index,_,Done) :-
 	!, Done=done. % mark successful sending
 
 
-readPort('Ports.internalPort'(Host,SNr,PNr,Socket),_,_):-
+readPort('Network.Ports.InternalPort'(Host,SNr,PNr,Socket),_,_):-
 	var(Socket), !,
 	string2Atom(Host,AHost),
 	writeErr('ERROR: readPort: Port '),
 	writeErr(SNr), writeErr('/'), writeErr(PNr),
 	writeErr('@'), writeErr(AHost),
 	writeErr(' only opened for writing!'), nlErr.
-readPort('Ports.internalPort'(_,_,PNr,Socket),Msg,Timeout) :-
+readPort('Network.Ports.InternalPort'(_,_,PNr,Socket),Msg,Timeout) :-
 	% catch connection errors:
 	on_exception(Exc,readFromSocket(PNr,Socket,Msg,Timeout),
                      (printError(Exc)->Msg=[];Msg=[])), !.
@@ -358,12 +355,12 @@ prim_sendPort(RMsg,RPort,R,E0,E) :-
 	user:derefAll(RMsg,Msg), user:derefRoot(RPort,Port),
 	prim_sendPortExec(Msg,Port,R,E0,E).
 
-prim_sendPortExec(Msg,'Ports.internalPort'(_,0,_,Stream),
+prim_sendPortExec(Msg,'Network.Ports.InternalPort'(_,0,_,Stream),
 		  'Prelude.True',E0,E) :-
 	% send to internal port
 	!,
 	add2Stream(Stream,Msg), E0=E.
-prim_sendPortExec('Ports.SP_Put'(Str),'Ports.internalPort'(_,-1,_,WIn),
+prim_sendPortExec('Network.Ports.SP_Put'(Str),'Network.Ports.InternalPort'(_,-1,_,WIn),
 		  'Prelude.True',E0,E) :-
 	% send to stream port
 	!,
@@ -372,7 +369,7 @@ prim_sendPortExec('Ports.SP_Put'(Str),'Ports.internalPort'(_,-1,_,WIn),
 	ifTracePort((writeErr('TRACEPORTS: SP_Put: '),
 		     writeChars(user_error,Str),
 		     nlErr)).
-prim_sendPortExec('Ports.SP_GetLine'(Str),'Ports.internalPort'(WOut,-1,_,_),
+prim_sendPortExec('Network.Ports.SP_GetLine'(Str),'Network.Ports.InternalPort'(WOut,-1,_,_),
 		'Prelude.True',E0,E) :-
 	% send to stream port
 	!,
@@ -382,7 +379,7 @@ prim_sendPortExec('Ports.SP_GetLine'(Str),'Ports.internalPort'(WOut,-1,_,_),
 		     writeChars(user_error,SPOutLine),
 		     nlErr)),
 	user:constrEq(SPOutLine,Str,_,E0,E). % unify SP_Get-Arg with read line
-prim_sendPortExec('Ports.SP_GetChar'(Chr),'Ports.internalPort'(WOut,-1,_,_),
+prim_sendPortExec('Network.Ports.SP_GetChar'(Chr),'Network.Ports.InternalPort'(WOut,-1,_,_),
 		'Prelude.True',E0,E) :-
 	% send to stream port
 	!,
@@ -391,7 +388,7 @@ prim_sendPortExec('Ports.SP_GetChar'(Chr),'Ports.internalPort'(WOut,-1,_,_),
 		     writeErr(C),
 		     nlErr)),
 	user:constrEq(C,Chr,_,E0,E). % unify SP_GetChar-Arg with read character
-prim_sendPortExec('Ports.SP_EOF'(Bool),'Ports.internalPort'(WOut,-1,_,_),
+prim_sendPortExec('Network.Ports.SP_EOF'(Bool),'Network.Ports.InternalPort'(WOut,-1,_,_),
 		'Prelude.True',E0,E) :-
 	% send to stream port
 	!,
@@ -400,18 +397,18 @@ prim_sendPortExec('Ports.SP_EOF'(Bool),'Ports.internalPort'(WOut,-1,_,_),
 		     writeErr(EOF),
 		     nlErr)),
 	user:constrEq(Bool,EOF,_,E0,E).	% unify SP_EOF-Arg with current value
-prim_sendPortExec('Ports.SP_Close','Ports.internalPort'(WOut,-1,_,WIn),
+prim_sendPortExec('Network.Ports.SP_Close','Network.Ports.InternalPort'(WOut,-1,_,WIn),
 		'Prelude.True',E0,E) :-
 	% send to stream port
 	!,
 	close(WIn), close(WOut), % close input and output streams
 	E0=E.
-prim_sendPortExec(Msg,'Ports.internalPort'(_,-1,_,_),'Prelude.True',E0,E) :-
+prim_sendPortExec(Msg,'Network.Ports.InternalPort'(_,-1,_,_),'Prelude.True',E0,E) :-
 	% send to stream port
 	!,
 	writeErr('ERROR: wrong message received by stream port: '),
 	writeErr(Msg), nlErr, E0=E.
-prim_sendPortExec(Msg,'Ports.internalPort'(Host,SNr,PNr,_),'Prelude.True',E0,E) :-
+prim_sendPortExec(Msg,'Network.Ports.InternalPort'(Host,SNr,PNr,_),'Prelude.True',E0,E) :-
 	% send to external port
 	% catch connection errors:
         string2Atom(Host,AHost),
@@ -432,14 +429,14 @@ add2Stream([_|Str],Item) :- add2Stream(Str,Item).
 
 %%%% ping
 
-'Ports.prim_ping'(_,'Ports.internalPort'(_,0,_,_),'Prelude.Just'(0)) :-
+'Network.Ports.prim_ping'(_,'Network.Ports.InternalPort'(_,0,_,_),'Prelude.Just'(0)) :-
 	% ping internal port
 	!.
-'Ports.prim_ping'(_TimeOut,'Ports.internalPort'(_WOut,-1,_,_WIn),
+'Network.Ports.prim_ping'(_TimeOut,'Network.Ports.InternalPort'(_WOut,-1,_,_WIn),
                   'Prelude.Just'(0)) :-
 	% ping to process port: must still be done....
 	!.
-'Ports.prim_ping'(TimeOut,'Ports.internalPort'(Host,SNr,PNr,_),Result) :-
+'Network.Ports.prim_ping'(TimeOut,'Network.Ports.InternalPort'(Host,SNr,PNr,_),Result) :-
 	% ping external port
 	string2Atom(Host,AHost),
 	on_exception(_Exc,ping2SocketPort(AHost,SNr,PNr,TimeOut,Result),
@@ -474,8 +471,8 @@ ping2SocketPort(Host,SNr,PNr,TimeOut,Result) :-
 
 %%%% connect
   
-'Ports.prim_connectPortAtSocket'(RSNr,RPNr,RHost,
-                           'Ports.internalPort'(Host,SNr,PNr,'Prelude.()')) :-
+'Network.Ports.prim_connectPortAtSocket'(RSNr,RPNr,RHost,
+   'Network.Ports.InternalPort'(Host,SNr,PNr,'Prelude.()')) :-
 	user:derefRoot(RSNr,SNr),
 	user:derefRoot(RPNr,PNr),
 	user:derefAll(RHost,Host), !.
@@ -537,7 +534,9 @@ receive_extvar_bindings(Str,VIs) :-
 % of all variables occurring in the term and their uniquely assigned indices:
 %
 
-show4sending(T,S,VIs) :- numberVars(T,GT,[],VIs), show_term(GT,qualified,S,[]).
+show4sending(T,S,VIs) :-
+        numberVars(T,GT,[],VIs),
+        readShowTerm:show_term(GT,qualified,S,[]).
 
 
 % get the assigned index for a variable:
@@ -556,7 +555,8 @@ deleteIndexVariable(Index,[VI|VIs],V,[VI|VIs1]) :-
 
 % conversion of string representations of Curry terms into Curry terms:
 parse_received_message(InStream,OutStream,String,Term) :-
-	readTerm(String,qualified,T,GroundTerm), skipWhiteSpace(T,[]),
+	readShowTerm:readTerm(String,qualified,T,GroundTerm),
+        readShowTerm:skipWhiteSpace(T,[]),
 	extractVars(GroundTerm,Term,[],VIs),
 	send_extvar_bindings(VIs,Dones,OutStream),
 	closeStreamAfterDones(Dones,InStream,OutStream).
@@ -584,13 +584,13 @@ closeStreamAfterDones(_,Dones,InStream,OutStream) :-
 % definitions for process communication:
 %
 % internal representation of the handle of the port to the process:
-% 'Ports.internalPort'(WOut,-1,<unused>,WIn) where:
+% 'Network.Ports.InternalPort'(WOut,-1,<unused>,WIn) where:
 % WOut: a Prolog stream, the output of the process
 % WIn : a Prolog stream, the input to the process
 
 %%%%% open a connection to an external process:
 
-'Ports.prim_openProcessPort'(RCmdString,'Ports.internalPort'(WOUT,-1,0,WIN)) :-
+'Network.Ports.prim_openProcessPort'(RCmdString,'Network.Ports.InternalPort'(WOUT,-1,0,WIN)) :-
 	user:derefAll(RCmdString,CmdString),
 	string2Atom(CmdString,Cmd),
 	execCommand(Cmd,WIN,WOUT,_).
@@ -615,7 +615,7 @@ prim_choiceSPEP_exec(SPPort,share(M),Result,E0,E) :-
 	        update_mutable('$eval'(TResult),M))).
 prim_choiceSPEP_exec(_,[M|Ms],'Prelude.Right'([M|Ms]),E0,E) :-
 	!, E0=E. % stream already evaluated
-prim_choiceSPEP_exec('Ports.internalPort'(WOut,-1,_,_),[],Result,E0,E) :-
+prim_choiceSPEP_exec('Network.Ports.InternalPort'(WOut,-1,_,_),[],Result,E0,E) :-
 	% message stream is empty, look at stream port:
 	readStreamLine(WOut,WOLine),
 	map2M(basics:char_int,SPOutLine,WOLine),
@@ -625,14 +625,14 @@ prim_choiceSPEP_exec('Ports.internalPort'(WOut,-1,_,_),[],Result,E0,E) :-
 	Result='Prelude.Left'(SPOutLine),
 	E0=E,
 	!.
-prim_choiceSPEP_exec(SPort,'Ports.basicServerLoop'(Port),Result,E0,E) :-
-        Port='Ports.internalPort'(_,_,PNr,_),
+prim_choiceSPEP_exec(SPort,'Network.Ports.basicServerLoop'(Port),Result,E0,E) :-
+        Port='Network.Ports.InternalPort'(_,_,PNr,_),
 	checkIncomingPortStreams(PNr,InPortStream,OutPortStream),
 	!,
 	readStreamLine(InPortStream,MsgString),
 	(compileWithSharing(function)
-	 -> makeShare('Ports.basicServerLoop'(Port),BSL)
-	  ; BSL = 'Ports.basicServerLoop'(Port)),
+	 -> makeShare('Network.Ports.basicServerLoop'(Port),BSL)
+	  ; BSL = 'Network.Ports.basicServerLoop'(Port)),
 	(parse_received_message(InPortStream,OutPortStream,MsgString,Msg)
 	 -> ifTracePort((writeErr('TRACEPORTS: Received message: '),
 		         writeErr(Msg), nlErr)),
@@ -642,13 +642,13 @@ prim_choiceSPEP_exec(SPort,'Ports.basicServerLoop'(Port),Result,E0,E) :-
 	    prim_choiceSPEP_exec(SPort,BSL,Result,E0,E)),
 	E0=E,
 	!.
-prim_choiceSPEP_exec('Ports.internalPort'(WOut,-1,_,WIn),
-		     'Ports.basicServerLoop'(Port),Result,E0,E) :-
-        Port='Ports.internalPort'(_,_,PNr,Socket),
+prim_choiceSPEP_exec('Network.Ports.InternalPort'(WOut,-1,_,WIn),
+		     'Network.Ports.basicServerLoop'(Port),Result,E0,E) :-
+        Port='Network.Ports.InternalPort'(_,_,PNr,Socket),
 	waitForSocketOrInputStreams(Socket,Client,InPortStream,OutPortStream,[WOut],_),
 	(compileWithSharing(function)
-	 -> makeShare('Ports.basicServerLoop'(Port),BSL)
-	  ; BSL = 'Ports.basicServerLoop'(Port)),
+	 -> makeShare('Network.Ports.basicServerLoop'(Port),BSL)
+	  ; BSL = 'Network.Ports.basicServerLoop'(Port)),
 	(Client=no
 	 -> % there is input on WOut:
             readStreamLine(WOut,WOLine),
@@ -667,10 +667,10 @@ prim_choiceSPEP_exec('Ports.internalPort'(WOut,-1,_,WIn),
 		    Result='Prelude.Right'([Msg|BSL])
 	          ; writeErr('ERROR: Illegal message received (ignored): '),
 		    putChars(user_error,MsgString), nlErr,
-		    prim_choiceSPEP_exec('Ports.internalPort'(WOut,-1,_,WIn),
+		    prim_choiceSPEP_exec('Network.Ports.InternalPort'(WOut,-1,_,WIn),
 					 BSL,Result,E0,E))
 	      ; % try reading next message:
-		prim_choiceSPEP_exec('Ports.internalPort'(WOut,-1,_,WIn),
+		prim_choiceSPEP_exec('Network.Ports.InternalPort'(WOut,-1,_,WIn),
 		                     BSL,Result,E0,E))
 	   ),
 	E0=E,
@@ -690,7 +690,7 @@ numberVars(V,'VAR'(I),VIs,NVIs) :-
 	 -> NVIs=VIs
 	  ; length(VIs,I), NVIs=[(V,I)|VIs] ).
 numberVars(T,NT,VIs,NVIs) :-
-	isShowableArg(T),
+	readShowTerm:isShowableArg(T),
 	T =.. [C|Args],
 	numberVarsList(Args,NArgs,VIs,NVIs),
 	NT =.. [C|NArgs].
@@ -721,4 +721,90 @@ extractVarsList([Arg|Args],[NArg|NArgs],VIs,NVIs) :-
 
 % not yet implemented in PAKCS:
 ?- block 'prim_after'(?,?,-,?).
-prim_after(_,_,E,E) :- raise_exception('Ports.after not implemented!').
+prim_after(_,_,E,E) :- raise_exception('Network.Ports.after not implemented!').
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% choice on a stream and an external message stream:
+?- block prim_hWaitForInputsOrMsgs(?,?,?,-,?).
+prim_hWaitForInputsOrMsgs(H,M,partcall(1,exec_hWaitForInputsOrMsgs,[M,H]),E,E).
+
+?- block exec_hWaitForInputsOrMsgs(?,-,?,?,?,?),
+         exec_hWaitForInputsOrMsgs(?,?,?,?,-,?).
+exec_hWaitForInputsOrMsgs(Handles,share(M),World,Result,E0,E) :-
+        !,
+	get_mutable(V,M),
+	(V='$eval'(R) % external message stream has been already evaluated
+	 -> E0=E, Result='$io'('Prelude.Right'(R))
+	  ; exec_hWaitForInputsOrMsgs(Handles,V,World,CResult,E0,E),
+	    (CResult='$io'('Prelude.Left'(_))
+  	     -> Result=CResult
+	      ; CResult='$io'('Prelude.Right'(S)),
+	        (compileWithSharing(variable) -> user:propagateShare(S,TResult)
+		                               ; S=TResult),
+	        Result='$io'('Prelude.Right'(TResult)),
+	        update_mutable('$eval'(TResult),M))).
+exec_hWaitForInputsOrMsgs(_,[M|Ms],_,'$io'('Prelude.Right'([M|Ms])),E0,E) :-
+	!, E0=E. % stream already evaluated
+exec_hWaitForInputsOrMsgs(RHandles,[],_,'$io'('Prelude.Left'(N)),E0,E) :- !,
+	% message stream is empty, so anything must be received from the handles.
+	user:derefAll(RHandles,Handles),
+	getInstreams(Handles,InStreams),
+	waitForInputDataOnStreams(InStreams,-1,N),
+	!, E0=E.
+exec_hWaitForInputsOrMsgs(Handles,'Network.Ports.basicServerLoop'(Port),World,
+                          Result,E0,E) :-
+        Port='Network.Ports.InternalPort'(_,_,PNr,_),
+	checkIncomingPortStreams(PNr,InPortStream,OutPortStream),
+	!,
+	readStreamUntilEndOfTerm(InPortStream,MsgString),
+	(parse_received_message(InPortStream,OutPortStream,MsgString,Msg)
+	 -> ifTracePort((write(user_error,'TRACEPORTS: Received message: '),
+		         write(user_error,Msg), nl(user_error))),
+	    Result='$io'('Prelude.Right'([Msg|
+                                      'Network.Ports.basicServerLoop'(Port)])),
+            E0=E
+	  ; write(user_error,'ERROR: Illegal message received (ignored): '),
+	    putChars(user_error,MsgString), nl(user_error),
+	    exec_hWaitForInputsOrMsgs(Handles,
+              'Network.Ports.basicServerLoop'(Port),World,Result,E0,E)),
+	!.
+exec_hWaitForInputsOrMsgs(RHandles,'Network.Ports.basicServerLoop'(Port),
+                          World,Result,E0,E):-
+	user:derefAll(RHandles,Handles),
+	getInstreams(Handles,InStreams),
+        Port='Network.Ports.InternalPort'(_,_,PNr,Socket),
+	waitForSocketOrInputStreams(Socket,Client,InPortStream,OutPortStream,
+				    InStreams,Index),
+	(Client=no
+	 -> % there is input on Handles:
+	    Result='$io'('Prelude.Left'(Index)), E0=E
+	  ; % there is a client connection:
+	    ifTracePort((write(user_error,'TRACEPORTS: Connection to client: '),
+		         write(user_error,Client), nl(user_error))),
+	    (readPortMessage(PNr,InPortStream,OutPortStream,MsgString)
+	     -> (parse_received_message(InPortStream,OutPortStream,
+                                        MsgString,Msg)
+	         -> ifTracePort((write(user_error,
+                                       'TRACEPORTS: Received message: '),
+		                 write(user_error,Msg), nl(user_error))),
+		    Result='$io'('Prelude.Right'([Msg|
+                                      'Network.Ports.basicServerLoop'(Port)])),
+                    E0=E
+	          ; write(user_error,
+                          'ERROR: Illegal message received (ignored): '),
+		    putChars(user_error,MsgString), nl(user_error),
+		    exec_hWaitForInputsOrMsgs(Handles,
+                      'Network.Ports.basicServerLoop'(Port),World,Result,E0,E))
+	      ; % try reading next message:
+		exec_hWaitForInputsOrMsgs(Handles,
+                  'Network.Ports.basicServerLoop'(Port),World,Result,E0,E))),
+	!.
+
+getInstreams([],[]).
+getInstreams(['$stream'('$inoutstream'(In,_))|Streams],[In|InStreams]) :- !,
+	getInstreams(Streams,InStreams).
+getInstreams([Stream|Streams],[Stream|InStreams]) :-
+	getInstreams(Streams,InStreams).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
