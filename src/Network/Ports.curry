@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
---- Library for distributed programming with ports.
---- [This paper](https://www.informatik.uni-kiel.de/~mh/papers/PPDP99.html)
+--- Library for distributed programming with ports. The
+--- [PPDP 1999 paper](https://doi.org/10.1007/10704567_11)
 --- contains a description of the basic ideas behind this library.
 ---
 --- @author Michael Hanus
